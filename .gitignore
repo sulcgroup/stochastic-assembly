@@ -1,0 +1,69 @@
+*.rule
+
+## Visual Studio Code files
+cpp/.vscode/*
+!cpp/.vscode/settings.json
+!cpp/.vscode/tasks.json
+!cpp/.vscode/launch.json
+!cpp/.vscode/extensions.json
+
+# Ignore bin and out directories
+cpp/bin
+cpp/input
+cpp/out*
+cpp/src/build
+cpp/cmake-build-debug
+cpp/polycubes
+
+## C++ files
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+## Python
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+/solve/py/.ipynb_checkpoints
+
+# typescript / npm
+web/dist
+web/node_modules
+web/.parcel-cache
+web/src/build

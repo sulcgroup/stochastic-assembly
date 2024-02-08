@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Polycube solver, by Joakim Bohlin and Josh Evans</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #ffffff;
+				color: #444;
+			}
+			a {
+				color: rgb(236, 236, 236);
+				text-decoration: none;
+			}
+
+            .busy{
+                animation-name: jumpy;
+                animation-duration: 1.5s;
+                animation-iteration-count: infinite;
+                animation-timing-function: linear;
+            }
+
+            .busy:nth-child(2) {
+                animation-delay: 0.2ms;
+            }
+
+            .busy:nth-child(3) {
+                animation-delay: 0.4ms;
+            }
+
+            @keyframes jumpy {
+                0%{
+                    transform: translateX(-10px);
+                }
+                50%{
+                    transform: translateX(10px);
+                }
+                100%{
+                    transform: translateX(-10px);
+                }
+            }
+
+			canvas {
+				position: fixed;
+				height: 100%;
+			}
+
+			.modal {
+				position: fixed;
+				z-index: 2;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.5);
+				opacity: 0;
+				visibility: hidden;
+				transform: scale(1.1);
+				transition: visibility 0s linear 0.25s, opacity 0.25s 0s, transform 0.25s;
+			}
+
+			.modal-content {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				background-color: white;
+				padding: 1rem 1rem;
+				max-width: 90%;
+				max-height: 90%;
+				border-radius: 0.5rem;
+				overflow-y: auto;
+			}
+
+			.show-modal {
+				opacity: 1;
+				visibility: visible;
+				transform: scale(1.0);
+				transition: visibility 0s linear 0s, opacity 0.25s 0s, transform 0.25s;
+			}
+
+			#status {
+				height: min-content;
+				background: none;
+			}
+
+			#info {
+				position: fixed;
+				z-index: 1;
+				background: #f0f0f0a9;
+			}
+			table, th, td {
+				empty-cells: hide;
+			}
+			td {
+				font-size: x-large;
+				color: white;
+			}
+			th, td {
+				text-align: center;
+				border-collapse: collapse;
+				border: 2px solid rgb(46, 46, 46);
+				background: #edeeeed6;
+			}
+			th {
+				background: #a8a8a8d6;
+				padding: 15px;
+			}
+			input[type=number] {
+				width: 2em;
+			}
+			.control_button {
+	        	border: 1px solid black;
+	        	border-radius: 20%;
+	        	margin: 2% 2% 2% 2%;
+	        	cursor: pointer;
+	        	display: inline-block;
+	        }
+		</style>
+		<script type="module" src="./ts/solve/solve.ts"></script>
+
+	</head>
+	<!-- Adapted from https://threejs.org/examples/webgl_interactive_voxelpainter.html-->
+	<body>
+		<div id="modal" class="modal">
+			<div class="modal-content" style="background: none;">
+				<table id="status"></table>
+				<div style="display: flex; justify-content: center;">
+					<button id="stopButton" style="margin-top: 15px;">Stop</button>
+				</div>
+			</div>
+		</div>
+		<canvas id="threeCanvas"></canvas>
+		<div id="info">
+			<h2>Polycube SAT solver</h2>
+			<small>By Joakim Bohlin and Josh Evans</small><br>
+			<p>Click the cube faces to add cubes (shift-click to remove), then click the <b>save</b> button to export the solve specifications.</p>
+			<p>Click the <b>solve</b> button to solve the SAT problem.</p>
+			<a id="getFaRule" style="color: black" target="_blank">Get fully adressable rule</a>
+			<p>Download topology matrix <button id="saveCoordMatrixBtn">Download</button>.</p>
+            <!--<a onmouseover="this.href='../?decRule='+ruleToDec(getFullyAdressableRule());" style="color: black" target="_blank">Fully adressable rule</a>-->
+            <div>
+                <button id="saveSolveSpecBtn">Save</button>
+                <input type="file" id="load" accept="json" onchange="handleFile()">
+            </div>
+			<button id="solveStructure">Solve</button>
+			<details>
+				<summary>Options</summary>
+				<input type="checkbox" id="stopAtFirstSol" checked>
+                <label for="stopAtFirstSol">Stop at first solution</label><br>
+                <input type="checkbox" id="torsionalPatches" checked>
+				<label for="torsionalPatches">Torsion</label><br>
+				<input type="checkbox" id="allowSelfInteract" checked>
+				<label for="allowSelfInteract">Allow Self-Interacting Particles?</label><br>
+<!--                <input type="checkbox" id="2d" onchange="toggle2DCamera()">-->
+<!--				<label for="2d">2D</label><br>-->
+				<fieldset>
+					<legend>Solve Details</legend>
+					<input type="checkbox" id="explicitNcNs"><label for="explicitNcNs">Override N<sub>c</sub> &amp; N<sub>s</sub></label><br>
+					<input id="minNc" type="number" min="1" value="1"> ≤ N<sub>c</sub> ≤ <input id="maxNc" type="number" value="-1"><br>
+					<input id="minNt" type="number" min="1" value="1"> ≤ N<sub>s</sub> ≤ <input id="maxNt" type="number" value="-1"><br>
+					<label for="concurrency">Solve Concurrency: </label> <input id="concurrency" type="number" min="1" value="4"><br>
+					<label for="nTries">Max. Alt. Tries: </label><input id="nTries" type="number" min="1" value="10"><br>
+				</fieldset>
+		  	</details>
+			<details>
+			  	<summary>Connections</summary>
+			  	<p>Control-click once on a surface and then again on another surface<br> to make a connection. Connections with
+			  	the <img src="ui/warning.svg" alt="Warning!" style='height:14px;'> label will break crystalization.<br>
+			  	<span id="willcrystal"></span></p>
+			  	<div id="connections">
+			  	</div>
+			</details>
+			<details>
+			  	<summary>Nanoparticles</summary>
+			  	<p>Select a nanoparticle type and alt-click to specify that a cube contain it.</p>
+			  	<div id="nanoparticles">
+			  		<label for="np-none">None</label><input name='nptype' type="radio" id="nanoparticle-select-none" checked="checked">
+			  	</div>
+			  	<button id="addTypeBtn">Add Type</button>
+			</details>
+		</div>
+	</body>
+</html>
